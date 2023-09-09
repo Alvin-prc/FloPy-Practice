@@ -11,11 +11,14 @@ import flopy.utils.binaryfile as bf
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 ###################################################################################################
 # 1. 创建模型
 modelname = "SM_model"
-workspace = "./eg2_workspace"
+temp_dir = TemporaryDirectory()  # 创建临时文件夹
+workspace = Path(temp_dir.name)  # 返回临时文件夹的路径
 mf = flopy.modflow.Modflow(
     modelname=modelname, exe_name="mf2005", model_ws=workspace
 )
@@ -202,7 +205,7 @@ for iplot, time in enumerate(mytimes):
     pmv = flopy.plot.PlotMapView(model=mf, layer=0, ax=ax)
     """创建一个PlotMapView对象，用于在地图上可视化地下水模型。
     model参数是MODFLOW模型对象（mf），layer参数指定了要可视化的模型层次，ax参数是前面创建的子图。"""
-    # qm = pmv.plot_ibound()
+    pmv.plot_array(head)  # 绘制热图
     lc = pmv.plot_grid()  # 绘制网格线
     qm = pmv.plot_bc("CHD", alpha=0.5)  # 绘制边界条件
     riv = pmv.plot_bc("RIV", alpha=0.5)
@@ -211,7 +214,10 @@ for iplot, time in enumerate(mytimes):
         # 检查场地内水头的最小值和最大值是否相等，如果不相等，就绘制水头等值线和流向
         # note 非常重要的一点，流向、等值线、等值线标签的绘制顺序错误会导致结果错误
         # note 我觉得正确的顺序应该是先绘制流向，再绘制等值线，最后给等值线加标签
-        quiver = pmv.plot_vector(qx, qy)  # 绘制流向
+        quiver = pmv.plot_vector(qx, qy, normalize=True, color="white")  # 绘制流向
+        """normalize参数指定是否将向量的长度归一化为1，如果矢量较长，代表在该方向流速或流量较大，
+        如果设置normalize=True，所有矢量长度相等，只关注流向而不关注流量大小，
+        color参数指定向量的颜色"""
         cs = pmv.contour_array(head)  # 绘制水头等值线
         plt.clabel(cs, inline=1, fontsize=10, fmt="%1.1f")  # 给水头等值线加标签
 
@@ -230,3 +236,9 @@ for iplot, time in enumerate(mytimes):
     ax.plot(wpt2[0], wpt2[1], lw=0, marker="o")
     ax.text(wpt2[0] + 25, wpt2[1] - 25, "well_C", size=12, zorder=12)
 plt.show()
+
+# 删除临时文件夹
+try :
+    temp_dir.cleanup()
+except:
+    pass
