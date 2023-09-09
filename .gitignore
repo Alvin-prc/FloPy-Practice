@@ -1,2 +1,4 @@
-.idea
-eg*_workspace
+# 忽略.idea文件夹
+.idea/
+# 忽略工作空间文件夹
+eg*_workspace/
